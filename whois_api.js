@@ -5,7 +5,6 @@ const app = express();
 app.use(express.json());
 
 function formatDate(dateString) {
-    // Verifica se a string de data está no formato esperado
     const datePattern = /^\d{4}-\d{2}-\d{2}/;
     if (datePattern.test(dateString)) {
         const [year, month, day] = dateString.split(/[-T]/);
@@ -25,10 +24,8 @@ function parseWhoisData(data) {
     let dataExpiracao = 'Data indisponível';
     let registrador = 'Informação indisponível';
 
-    // Verifica se o domínio usa proteção de privacidade
     const privacyProtect = /Privacy Protect/i.test(data);
 
-    // Padrões para extração de informações
     const responsavelPatterns = [
         /responsible:\s*(.*)/i,
         /Registrant Name:\s*(.*)/i
@@ -71,10 +68,21 @@ function parseWhoisData(data) {
         return false;
     });
 
-    // Se o campo 'responsavel' for 'Informação indisponível', usa o valor de 'registrador'
     const proprietario = responsavel !== 'Informação indisponível' ? responsavel : registrador;
 
     return { proprietario, dataExpiracao, rawData: data };
+}
+
+function verificarAviso(dataExpiracao) {
+    if (dataExpiracao === 'Data indisponível') return false;
+
+    const [day, month, year] = dataExpiracao.split('/');
+    const expirationDate = new Date(`${year}-${month}-${day}`);
+    const currentDate = new Date();
+    const diffTime = expirationDate - currentDate;
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+    return diffDays <= 7;
 }
 
 function consultarWhois(dominio) {
@@ -85,11 +93,13 @@ function consultarWhois(dominio) {
             }
 
             const { proprietario, dataExpiracao, rawData } = parseWhoisData(data);
+            const aviso = verificarAviso(dataExpiracao);
 
             resolve({
                 dominio_registrado: true,
                 proprietario,
                 data_expiracao: dataExpiracao,
+                aviso,
                 rawData
             });
         });
