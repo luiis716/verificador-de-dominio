@@ -2,8 +2,9 @@
   "name": "em-node",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "whois_api.js",
   "scripts": {
+    "start": "node whois_api.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
